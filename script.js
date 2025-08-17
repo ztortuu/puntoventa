@@ -8,12 +8,8 @@ let movimientosCaja = [];
 // Usuarios (guardados en localStorage)
 function getUsuarios() {
   return JSON.parse(localStorage.getItem("usuarios")) || [
-    { user: "admin", pass: "admin123", rol: "admin" } // usuario inicial
+    { user: "admin", pass: "admin123", rol: "admin" }
   ];
-}
-
-function saveUsuarios(usuarios) {
-  localStorage.setItem("usuarios", JSON.stringify(usuarios));
 }
 
 function login() {
@@ -28,7 +24,7 @@ function login() {
   }
 
   localStorage.setItem("sesion", JSON.stringify(encontrado));
-  window.location.href = "index.html"; // redirigir al punto de venta
+  window.location.href = "index.html"; // redirigir al POS
 }
 
 function logout() {
@@ -37,62 +33,6 @@ function logout() {
 }
 
 
-// Usuarios (se guardan en localStorage)
-function getUsuarios() {
-  return JSON.parse(localStorage.getItem("usuarios")) || [
-    { user: "admin", pass: "admin123", rol: "admin" }
-  ];
-}
-
-function saveUsuarios(usuarios) {
-  localStorage.setItem("usuarios", JSON.stringify(usuarios));
-}
-
-// Login
-function login() {
-  const user = document.getElementById("loginUser").value.trim();
-  const pass = document.getElementById("loginPass").value.trim();
-  const usuarios = getUsuarios();
-
-  const encontrado = usuarios.find(u => u.user === user && u.pass === pass);
-  if (!encontrado) {
-    alert("Usuario o contraseña incorrectos");
-    return;
-  }
-
-  localStorage.setItem("sesion", JSON.stringify(encontrado));
-  mostrarSistema(encontrado);
-}
-
-// Mostrar sistema según rol
-function mostrarSistema(usuario) {
-  document.getElementById("loginScreen").style.display = "none";
-  document.querySelector("header").style.display = "block";
-  document.querySelector("nav").style.display = "flex";
-  document.querySelector("main").style.display = "block";
-
-  // Restricciones según rol
-  if (usuario.rol === "empleado") {
-    document.querySelector("button[onclick=\"mostrarSeccion('ajustes')\"]").style.display = "none";
-    document.querySelector("button[onclick=\"mostrarSeccion('totalesCaja')\"]").style.display = "none";
-  }
-}
-
-// Cerrar sesión
-function logout() {
-  localStorage.removeItem("sesion");
-  location.reload();
-}
-
-// Auto-login
-window.onload = function() {
-  const sesion = JSON.parse(localStorage.getItem("sesion"));
-  if (sesion) {
-    mostrarSistema(sesion);
-  } else {
-    document.getElementById("loginScreen").style.display = "block";
-  }
-};
 
 
 function mostrarInventario() {
@@ -1654,6 +1594,7 @@ function login() {
   window.location.href = "index.html"; // 👈 redirección al index
 }
 
+
 window.onload = function() {
   const sesion = JSON.parse(localStorage.getItem("sesion"));
   if (!sesion) {
@@ -1670,5 +1611,4 @@ function logout() {
   localStorage.removeItem("sesion");
   window.location.href = "login.html"; // 👈 vuelve al login
 }
-
 
