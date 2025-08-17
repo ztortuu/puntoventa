@@ -12,6 +12,25 @@ function getUsuarios() {
   ];
 }
 
+function saveUsuarios(usuarios) {
+  localStorage.setItem("usuarios", JSON.stringify(usuarios));
+}
+
+function mostrarUsuarios() {
+  // Tu función actual para mostrar usuarios
+}
+
+function crearUsuario() {
+  // Tu función actual para crear usuarios
+}
+
+function eliminarUsuario(i) {
+  // Tu función actual para eliminar usuarios
+}
+
+// --- FUNCIONES DE GESTIÓN DE SESIÓN ---
+
+// Inicia sesión: guarda en localStorage y redirige
 function login() {
   const user = document.getElementById("loginUser").value.trim();
   const pass = document.getElementById("loginPass").value.trim();
@@ -24,15 +43,47 @@ function login() {
   }
 
   localStorage.setItem("sesion", JSON.stringify(encontrado));
-  window.location.href = "index.html"; // redirigir al POS
+  window.location.href = "index.html";
 }
 
+// Cierra sesión: elimina de localStorage y redirige
 function logout() {
   localStorage.removeItem("sesion");
   window.location.href = "login.html";
 }
 
+// --- LÓGICA DE CONTROL DE FLUJO (LA CLAVE) ---
 
+// Este código se ejecuta cuando el navegador termina de cargar el HTML.
+document.addEventListener("DOMContentLoaded", () => {
+    // Detecta la página actual
+    const isLoginPage = window.location.pathname.endsWith("login.html");
+    const isIndexPage = window.location.pathname.endsWith("index.html") || window.location.pathname === "/";
+
+    // Si estamos en la página de login
+    if (isLoginPage) {
+        // Enlaza el botón de login a la función
+        const loginBtn = document.getElementById("login-btn");
+        if (loginBtn) {
+            loginBtn.addEventListener("click", login);
+        }
+    }
+
+    // Si estamos en la página principal (punto de venta)
+    if (isIndexPage) {
+        const sesion = JSON.parse(localStorage.getItem("sesion"));
+        if (!sesion) {
+            // Si no hay sesión, redirige al login.html
+            console.log("No hay sesión activa. Redirigiendo a login.html.");
+            window.location.href = "login.html";
+            return;
+        }
+
+        // Si hay sesión, muestra el contenido de la página
+        console.log("Sesión activa. Mostrando el sistema de punto de venta.");
+        mostrarSistema(sesion);
+    }
+});
 
 
 function mostrarInventario() {
@@ -1611,4 +1662,3 @@ function logout() {
   localStorage.removeItem("sesion");
   window.location.href = "login.html"; // 👈 vuelve al login
 }
-
