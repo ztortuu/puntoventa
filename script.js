@@ -1638,3 +1638,37 @@ window.onload = function() {
   }
   mostrarSistema(sesion);
 };
+
+function login() {
+  const user = document.getElementById("loginUser").value.trim();
+  const pass = document.getElementById("loginPass").value.trim();
+  const usuarios = getUsuarios();
+
+  const encontrado = usuarios.find(u => u.user === user && u.pass === pass);
+  if (!encontrado) {
+    alert("Usuario o contraseña incorrectos");
+    return;
+  }
+
+  localStorage.setItem("sesion", JSON.stringify(encontrado));
+  window.location.href = "index.html"; // 👈 redirección al index
+}
+
+window.onload = function() {
+  const sesion = JSON.parse(localStorage.getItem("sesion"));
+  if (!sesion) {
+    // 👇 Si no hay sesión guardada, vuelve al login
+    window.location.href = "login.html";
+    return;
+  }
+
+  // 👇 Si hay sesión, mostramos el sistema
+  mostrarSistema(sesion);
+};
+
+function logout() {
+  localStorage.removeItem("sesion");
+  window.location.href = "login.html"; // 👈 vuelve al login
+}
+
+
