@@ -5,6 +5,96 @@ let movimientosCaja = [];
 
 // Cargar datos almacenados
 
+// Usuarios (guardados en localStorage)
+function getUsuarios() {
+  return JSON.parse(localStorage.getItem("usuarios")) || [
+    { user: "admin", pass: "admin123", rol: "admin" } // usuario inicial
+  ];
+}
+
+function saveUsuarios(usuarios) {
+  localStorage.setItem("usuarios", JSON.stringify(usuarios));
+}
+
+function login() {
+  const user = document.getElementById("loginUser").value.trim();
+  const pass = document.getElementById("loginPass").value.trim();
+  const usuarios = getUsuarios();
+
+  const encontrado = usuarios.find(u => u.user === user && u.pass === pass);
+  if (!encontrado) {
+    alert("Usuario o contraseña incorrectos");
+    return;
+  }
+
+  localStorage.setItem("sesion", JSON.stringify(encontrado));
+  window.location.href = "index.html"; // redirigir al punto de venta
+}
+
+function logout() {
+  localStorage.removeItem("sesion");
+  window.location.href = "login.html";
+}
+
+
+// Usuarios (se guardan en localStorage)
+function getUsuarios() {
+  return JSON.parse(localStorage.getItem("usuarios")) || [
+    { user: "admin", pass: "admin123", rol: "admin" }
+  ];
+}
+
+function saveUsuarios(usuarios) {
+  localStorage.setItem("usuarios", JSON.stringify(usuarios));
+}
+
+// Login
+function login() {
+  const user = document.getElementById("loginUser").value.trim();
+  const pass = document.getElementById("loginPass").value.trim();
+  const usuarios = getUsuarios();
+
+  const encontrado = usuarios.find(u => u.user === user && u.pass === pass);
+  if (!encontrado) {
+    alert("Usuario o contraseña incorrectos");
+    return;
+  }
+
+  localStorage.setItem("sesion", JSON.stringify(encontrado));
+  mostrarSistema(encontrado);
+}
+
+// Mostrar sistema según rol
+function mostrarSistema(usuario) {
+  document.getElementById("loginScreen").style.display = "none";
+  document.querySelector("header").style.display = "block";
+  document.querySelector("nav").style.display = "flex";
+  document.querySelector("main").style.display = "block";
+
+  // Restricciones según rol
+  if (usuario.rol === "empleado") {
+    document.querySelector("button[onclick=\"mostrarSeccion('ajustes')\"]").style.display = "none";
+    document.querySelector("button[onclick=\"mostrarSeccion('totalesCaja')\"]").style.display = "none";
+  }
+}
+
+// Cerrar sesión
+function logout() {
+  localStorage.removeItem("sesion");
+  location.reload();
+}
+
+// Auto-login
+window.onload = function() {
+  const sesion = JSON.parse(localStorage.getItem("sesion"));
+  if (sesion) {
+    mostrarSistema(sesion);
+  } else {
+    document.getElementById("loginScreen").style.display = "block";
+  }
+};
+
+
 function mostrarInventario() {
     const inventario = JSON.parse(localStorage.getItem("inventario")) || [];
 
@@ -1505,3 +1595,46 @@ document.getElementById("historial-tab").addEventListener("click", () => {
     mostrarSeccion("historial");
     mostrarHistorialVentas();
 });
+function crearUsuario() {
+  const user = document.getElementById("nuevoUser").value.trim();
+  const pass = document.getElementById("nuevoPass").value.trim();
+  const rol = document.getElementById("nuevoRol").value;
+
+  if (!user || !pass) return alert("Completa los campos");
+
+  let usuarios = getUsuarios();
+  if (usuarios.some(u => u.user === user)) {
+    return alert("Ese usuario ya existe");
+  }
+
+  usuarios.push({ user, pass, rol });
+  saveUsuarios(usuarios);
+  alert("Usuario creado con éxito");
+  mostrarUsuarios();
+}
+
+function mostrarUsuarios() {
+  const usuarios = getUsuarios();
+  const lista = document.getElementById("listaUsuarios");
+  lista.innerHTML = "";
+  usuarios.forEach((u, i) => {
+    lista.innerHTML += `<li>${u.user} (${u.rol}) 
+      <button onclick="eliminarUsuario(${i})">Eliminar</button></li>`;
+  });
+}
+
+function eliminarUsuario(i) {
+  let usuarios = getUsuarios();
+  usuarios.splice(i, 1);
+  saveUsuarios(usuarios);
+  mostrarUsuarios();
+}
+window.onload = function() {
+  const sesion = JSON.parse(localStorage.getItem("sesion"));
+  if (!sesion) {
+    // si no está logueado, vuelve al login
+    window.location.href = "login.html";
+    return;
+  }
+  mostrarSistema(sesion);
+};
