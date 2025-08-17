@@ -8,6 +8,13 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
+<div id="loginScreen" class="seccion" style="display:block; max-width:400px;">
+  <h2>Iniciar Sesión</h2>
+  <input type="text" id="loginUser" placeholder="Usuario">
+  <input type="password" id="loginPass" placeholder="Contraseña">
+  <button onclick="login()">Entrar</button>
+</div>
+
 <body>
     <header>
         <h1>Polleria</h1>
@@ -20,6 +27,8 @@
         <button onclick="mostrarSeccion('historial')">Historial de Ventas</button>
         <button onclick="mostrarSeccion('totalesCaja')">Totales y Caja</button>
         <button onclick="mostrarSeccion('ajustes')">Ajustes</button>
+        <button onclick="logout()">Cerrar Sesión</button>
+
 
     </nav>
 
@@ -178,7 +187,20 @@
 
             <h3>Restablecer Sistema</h3>
             <button onclick="restablecerSistema()" style="color: red;">⚠️ Restablecer Todo</button>
+       <h3>Gestión de Usuarios</h3>
+<input type="text" id="nuevoUser" placeholder="Nuevo usuario">
+<input type="password" id="nuevoPass" placeholder="Contraseña">
+<select id="nuevoRol">
+  <option value="empleado">Empleado</option>
+  <option value="admin">Admin</option>
+</select>
+<button onclick="crearUsuario()">Crear Usuario</button>
+
+<ul id="listaUsuarios"></ul>
+
+       
         </section>
+
 
     </main>
     <!-- Modal de Confirmación de Venta -->
