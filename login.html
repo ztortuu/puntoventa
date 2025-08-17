@@ -51,12 +51,10 @@
 <body>
   <div id="loginBox">
     <h2>Iniciar Sesión</h2>
-    <input type="text" id="loginUser" placeholder="Usuario">
-    <input type="password" id="loginPass" placeholder="Contraseña">
-    <button onclick="login()">Entrar</button>
+    <input type="text" id="loginUser" placeholder="Usuario" required>
+    <input type="password" id="loginPass" placeholder="Contraseña" required>
+    <button id="login-btn">Entrar</button>
   </div>
-
-  <!-- Importamos script.js para manejar login -->
   <script src="script.js"></script>
 </body>
 </html>
