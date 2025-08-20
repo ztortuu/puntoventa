@@ -373,143 +373,45 @@ function procesarPago() {
     cerrarVentana();
     finalizarVenta(metodoPago);
 }
-// Reemplazá toda tu función original por esta versión COMPLETA
-function confirmarVenta() {
-    // Leer ticket actual desde localStorage
-    const carrito = JSON.parse(localStorage.getItem('ticketActual')) || [];
 
+// Esta función SÓLO se encarga de abrir el modal y mostrar los datos
+function confirmarVenta() {
+    // Si no hay productos en el carrito, no hace nada
+    const carrito = JSON.parse(localStorage.getItem('ticketActual')) || [];
     if (carrito.length === 0) {
-        alert("El ticket está vacío.");
+        alert("El carrito está vacío. Agregue productos para finalizar la venta.");
         return;
     }
 
-    const total = carrito.reduce((s, i) => s + i.subtotal, 0);
+    const total = carrito.reduce((sum, item) => sum + item.subtotal, 0);
 
-    // Crear modal
+    // Crea el modal dinámicamente
     const modal = document.createElement("div");
-    modal.classList.add("modal");
+    modal.className = "modal";
     modal.innerHTML = `
         <div class="modal-contenido">
-            <h3>Confirmar Pago</h3>
-
-            <p><strong>Total: $<span id="totalModal">${total.toFixed(2)}</span></strong></p>
-
+            <h3>Confirmar Venta</h3>
+            <p>Total a pagar: <span id="modalTotal" style="user-select: text;">$${total.toFixed(2)}</span></p>
             <label for="metodoPago">Método de pago:</label>
-            <select id="metodoPago">
+            <select id="metodoPago" onchange="actualizarMetodoPago()">
                 <option value="efectivo">Efectivo</option>
                 <option value="debito">Débito</option>
                 <option value="transferencia">Transferencia</option>
             </select>
-
-            <div id="montoRecibidoContainer" style="margin-top:10px;">
+            <div id="campoMonto" style="margin-top: 10px;">
                 <label for="montoRecibido">Monto recibido:</label>
-                <input type="number" id="montoRecibido" placeholder="Ingrese monto">
-                <p id="cambioTexto" style="margin-top:5px;font-weight:bold;"></p>
+                <input type="number" id="montoRecibido" placeholder="Ingrese monto" onfocus="this.value=''" />
+                <p id="cambioMostrado"></p>
             </div>
-
-            <div style="margin-top:15px;display:flex;flex-wrap:wrap;gap:8px;">
-                <button id="btnImprimir">🖨️ Imprimir Ticket</button>
-                <button id="btnConfirmar">✅ Facturar sin Imprimir</button>
-                <button id="btnCancelar">❌ Cancelar</button>
-            </div>
+            <button onclick="finalizarVenta()">Confirmar</button>
+            <button onclick="cerrarModal()">Cancelar</button>
         </div>
     `;
     document.body.appendChild(modal);
+}
 
-    // Referencias
-    const metodoPagoEl = modal.querySelector("#metodoPago");
-    const montoInput = modal.querySelector("#montoRecibido");
-    const montoBox = modal.querySelector("#montoRecibidoContainer");
-    const cambioTexto = modal.querySelector("#cambioTexto");
-    const btnImprimir = modal.querySelector("#btnImprimir");
-    const btnConfirmar = modal.querySelector("#btnConfirmar");
-    const btnCancelar = modal.querySelector("#btnCancelar");
-
-    metodoPagoEl.addEventListener("change", () => {
-        if (metodoPagoEl.value === "efectivo") {
-            montoBox.style.display = "block";
-        } else {
-            montoBox.style.display = "none";
-            cambioTexto.textContent = "";
-        }
-    });
-    metodoPagoEl.dispatchEvent(new Event("change"));
-
-    montoInput.addEventListener("input", () => {
-        const recibido = parseFloat(montoInput.value);
-        if (!isNaN(recibido)) {
-            const cambio = recibido - total;
-            cambioTexto.textContent = cambio >= 0 ?
-                `Cambio: $${cambio.toFixed(2)}` :
-                `Faltan $${Math.abs(cambio).toFixed(2)}`;
-        } else {
-            cambioTexto.textContent = "";
-        }
-    });
-
-    let ventaProcesada = false;
-
-
-        // Guardar la venta en historial
-        const historial = JSON.parse(localStorage.getItem("historialVentas")) || [];
-        historial.push({
-            fecha: new Date().toLocaleString(),
-            productos: carrito,
-            total: total,
-            metodoPago,
-            recibido,
-            cambio
-        });
-        localStorage.setItem("historialVentas", JSON.stringify(historial));
-
-
-        // Actualizar caja
-        const caja = JSON.parse(localStorage.getItem("caja")) || [];
-        caja.push({
-            fecha: new Date().toLocaleString(),
-            tipo: "ingreso",
-            concepto: "Venta",
-            monto: total,
-            metodo: metodoPago
-        });
-        localStorage.setItem("caja", JSON.stringify(caja));
-
-        // Imprimir ticket si se solicitó
-        if (imprimir) {
-            let textoTicket = "*** TICKET DE VENTA ***\n\n";
-            carrito.forEach(p => {
-                textoTicket += `${p.nombre} - ${p.kilos}kg x $${p.precioPorKilo.toFixed(2)} = $${p.subtotal.toFixed(2)}\n`;
-            });
-            textoTicket += `\nTOTAL: $${total.toFixed(2)}\n`;
-            textoTicket += `Pago: ${metodoPago}\n`;
-            if (metodoPago === "efectivo") {
-                textoTicket += `Recibido: $${recibido.toFixed(2)}\nCambio: $${cambio.toFixed(2)}\n`;
-            }
-            textoTicket += `\nGracias por su compra!\n\n`;
-
-            const win = window.open("", "", "width=400,height=600");
-            win.document.write(`<pre>${textoTicket}</pre>`);
-            win.print();
-            win.close();
-        }
-
-        // Limpiar pantalla
-        localStorage.removeItem('ticketActual');
-        document.querySelector('#tablaTicket tbody').innerHTML = '';
-        document.getElementById('totalTicket').textContent = 'Total: $0.00';
-        document.getElementById('totalTicket').dataset.total = "0";
-
-        modal.remove();
-    }
-
-    btnImprimir.addEventListener("click", () => finalizarVenta(true));
-    btnConfirmar.addEventListener("click", () => finalizarVenta(false));
-    btnCancelar.addEventListener("click", () => {
-        modal.remove();
-    });
-
-// Funcion para finalizar venta
-function finalizarVenta(imprimir = false) {
+// Esta función se encarga de la lógica de guardar la venta
+function finalizarVenta() {
     const carrito = JSON.parse(localStorage.getItem('ticketActual')) || [];
     const total = carrito.reduce((s, i) => s + i.subtotal, 0);
     const metodoPagoEl = document.getElementById("metodoPago");
@@ -557,11 +459,15 @@ function finalizarVenta(imprimir = false) {
     actualizarHistorialVentas();
     actualizarTotalesCaja();
 
-    // Cierra el modal de confirmación
+    // Cierra el modal
     const modal = document.querySelector(".modal");
     if (modal) modal.remove();
 }
 
+function cerrarModal() {
+    const modal = document.querySelector(".modal");
+    if (modal) modal.remove();
+}
 
 
 // H) Función compartida para registrar la venta
@@ -2050,4 +1956,5 @@ document.addEventListener("DOMContentLoaded", () => {
         mostrarSistema(sesion);
     }
 });
+
 
