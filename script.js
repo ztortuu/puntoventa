@@ -1873,35 +1873,6 @@ function mostrarSistema(sesion) {
   }
 }
 
-// Esta función se encarga SOLO de mostrar el inventario, no de crearlo.
-function mostrarInventario() {
-  const inventario = getInventario();
-
-  const listaPollo = document.getElementById("listaInventarioPollo");
-  const listaCarne = document.getElementById("listaInventarioCarne");
-  const listaCajones = document.getElementById("listaInventarioCajones");
-  
-  // Limpia el contenido anterior
-  if (listaPollo) listaPollo.innerHTML = "";
-  if (listaCarne) listaCarne.innerHTML = "";
-  if (listaCajones) listaCajones.innerHTML = "";
-  
-  // Si hay inventario, lo muestra
-  if (inventario.length > 0) {
-    inventario.forEach(item => {
-      const listItem = document.createElement("li");
-      listItem.innerHTML = `${item.nombre}: <span>${item.stock}</span>`;
-      if (item.id === "pollo") listaPollo.appendChild(listItem);
-      if (item.id === "carne") listaCarne.appendChild(listItem);
-      if (item.id === "cajones") listaCajones.appendChild(listItem);
-    });
-  } else {
-    // Si el inventario está vacío (lo cual no pasará con la inicialización)
-    // muestra un mensaje o no hace nada.
-    if (listaPollo) listaPollo.innerHTML = "<li>No hay productos en inventario.</li>";
-  }
-}
-
 // Función para mostrar la lista de usuarios en la sección de ajustes
 function mostrarUsuarios() {
   const usuarios = getUsuarios();
@@ -1932,6 +1903,7 @@ function logout() {
 
 // Funciones para inicializar datos si no existen
 function inicializarDatos() {
+    console.log("Inicializando datos...");
     // Inicializar inventario por defecto si no existe
     if (!localStorage.getItem("inventario")) {
         const inventarioInicial = [
