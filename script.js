@@ -508,6 +508,60 @@ function confirmarVenta() {
         modal.remove();
     });
 
+// Funcion para finalizar venta
+function finalizarVenta(imprimir = false) {
+    const carrito = JSON.parse(localStorage.getItem('ticketActual')) || [];
+    const total = carrito.reduce((s, i) => s + i.subtotal, 0);
+    const metodoPagoEl = document.getElementById("metodoPago");
+    const montoInput = document.getElementById("montoRecibido");
+
+    const metodoPago = metodoPagoEl.value;
+    const recibido = metodoPago === "efectivo" ? parseFloat(montoInput.value) : total;
+    const cambio = metodoPago === "efectivo" ? recibido - total : 0;
+
+    if (metodoPago === "efectivo" && (isNaN(recibido) || recibido < total)) {
+        alert("El monto recibido no es suficiente.");
+        return;
+    }
+
+    // Guardar la venta en historial
+    const historial = JSON.parse(localStorage.getItem("historialVentas")) || [];
+    historial.push({
+        fecha: new Date().toLocaleString(),
+        productos: carrito,
+        total: total,
+        metodoPago,
+        recibido,
+        cambio
+    });
+    localStorage.setItem("historialVentas", JSON.stringify(historial));
+
+    // Guardar el movimiento en la caja
+    const caja = JSON.parse(localStorage.getItem("caja")) || [];
+    caja.push({
+        fecha: new Date().toLocaleString(),
+        tipo: "ingreso",
+        concepto: "Venta",
+        monto: total,
+        metodo: metodoPago
+    });
+    localStorage.setItem("caja", JSON.stringify(caja));
+
+    // Limpiar el ticket y el localStorage temporal
+    localStorage.removeItem('ticketActual');
+    document.querySelector('#tablaTicket tbody').innerHTML = '';
+    document.getElementById('totalTicket').textContent = 'Total: $0.00';
+    document.getElementById('totalTicket').dataset.total = "0";
+
+    // Actualizar las vistas de historial y totales
+    actualizarHistorialVentas();
+    actualizarTotalesCaja();
+
+    // Cierra el modal de confirmación
+    const modal = document.querySelector(".modal");
+    if (modal) modal.remove();
+}
+
 
 
 // H) Función compartida para registrar la venta
@@ -1997,55 +2051,3 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-function finalizarVenta(imprimir = false) {
-    const carrito = JSON.parse(localStorage.getItem('ticketActual')) || [];
-    const total = carrito.reduce((s, i) => s + i.subtotal, 0);
-    const metodoPagoEl = document.getElementById("metodoPago");
-    const montoInput = document.getElementById("montoRecibido");
-
-    const metodoPago = metodoPagoEl.value;
-    const recibido = metodoPago === "efectivo" ? parseFloat(montoInput.value) : total;
-    const cambio = metodoPago === "efectivo" ? recibido - total : 0;
-
-    if (metodoPago === "efectivo" && (isNaN(recibido) || recibido < total)) {
-        alert("El monto recibido no es suficiente.");
-        return;
-    }
-
-    // Guardar la venta en historial
-    const historial = JSON.parse(localStorage.getItem("historialVentas")) || [];
-    historial.push({
-        fecha: new Date().toLocaleString(),
-        productos: carrito,
-        total: total,
-        metodoPago,
-        recibido,
-        cambio
-    });
-    localStorage.setItem("historialVentas", JSON.stringify(historial));
-
-    // Guardar el movimiento en la caja
-    const caja = JSON.parse(localStorage.getItem("caja")) || [];
-    caja.push({
-        fecha: new Date().toLocaleString(),
-        tipo: "ingreso",
-        concepto: "Venta",
-        monto: total,
-        metodo: metodoPago
-    });
-    localStorage.setItem("caja", JSON.stringify(caja));
-
-    // Limpiar el ticket y el localStorage temporal
-    localStorage.removeItem('ticketActual');
-    document.querySelector('#tablaTicket tbody').innerHTML = '';
-    document.getElementById('totalTicket').textContent = 'Total: $0.00';
-    document.getElementById('totalTicket').dataset.total = "0";
-
-    // Actualizar las vistas de historial y totales
-    actualizarHistorialVentas();
-    actualizarTotalesCaja();
-
-    // Cierra el modal de confirmación
-    const modal = document.querySelector(".modal");
-    if (modal) modal.remove();
-}
