@@ -449,19 +449,6 @@ function confirmarVenta() {
 
     let ventaProcesada = false;
 
-    function finalizarVenta(imprimir = false) {
-        if (ventaProcesada) return;
-        ventaProcesada = true;
-
-        const metodoPago = metodoPagoEl.value;
-        const recibido = metodoPago === "efectivo" ? parseFloat(montoInput.value) : total;
-        const cambio = metodoPago === "efectivo" ? recibido - total : 0;
-
-        if (metodoPago === "efectivo" && (isNaN(recibido) || recibido < total)) {
-            alert("El monto recibido no es suficiente.");
-            ventaProcesada = false;
-            return;
-        }
 
         // Guardar la venta en historial
         const historial = JSON.parse(localStorage.getItem("historialVentas")) || [];
@@ -520,7 +507,6 @@ function confirmarVenta() {
     btnCancelar.addEventListener("click", () => {
         modal.remove();
     });
-}
 
 
 
@@ -701,30 +687,56 @@ function actualizarMovimientosCaja() {
 
 // Historial
 function actualizarHistorialVentas() {
-    const lista = document.getElementById("listaHistorialVentas");
-    lista.innerHTML = "";
+    // 1. Leer el historial desde localStorage
+    const historial = JSON.parse(localStorage.getItem("historialVentas")) || [];
+    const tbody = document.querySelector("#historial table tbody");
+    if (!tbody) return;
 
-    historialVentas.slice().reverse().forEach(venta => {
-        const li = document.createElement("li");
-        const detalle = venta.productos.map(p =>
-            `${p.nombre} (${p.kilos.toFixed(2)}kg x $${p.precio.toFixed(2)}) = $${p.subtotal.toFixed(2)}`
-        ).join("<br>");
-        li.innerHTML = `<strong>${venta.fecha}</strong><br>${detalle}<br><strong>Total: $${venta.total.toFixed(2)}</strong>`;
-        lista.appendChild(li);
+    // 2. Limpiar la tabla antes de rellenarla
+    tbody.innerHTML = "";
+
+    // 3. Recorrer el historial y crear las filas de la tabla
+    historial.forEach((venta, index) => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+            <td>${venta.fecha}</td>
+            <td>$${venta.total.toFixed(2)}</td>
+            <td>${venta.metodoPago}</td>
+            <td>
+                <button onclick="verDetalleVenta(${index})">Ver Detalles</button>
+            </td>
+        `;
+        tbody.appendChild(fila);
     });
 }
 
 // Totales
 function actualizarTotalesCaja() {
-    const totalFacturas = historialVentas.reduce((acc, v) => acc + v.total, 0);
-    const totalEntradas = movimientosCaja.filter(m => m.tipo === "entrada").reduce((acc, m) => acc + m.monto, 0);
-    const totalSalidas = movimientosCaja.filter(m => m.tipo === "salida").reduce((acc, m) => acc + m.monto, 0);
-    const saldoFinal = totalFacturas + totalEntradas - totalSalidas;
+    // 1. Leer todos los movimientos de caja desde localStorage
+    const movimientos = JSON.parse(localStorage.getItem("caja")) || [];
 
-    document.getElementById("totalFacturas").textContent = `Total facturas: $${totalFacturas.toFixed(2)}`;
-    document.getElementById("totalEntradas").textContent = `Total entradas: $${totalEntradas.toFixed(2)}`;
-    document.getElementById("totalSalidas").textContent = `Total salidas: $${totalSalidas.toFixed(2)}`;
-    document.getElementById("saldoFinal").textContent = `Saldo final: $${saldoFinal.toFixed(2)}`;
+    // 2. Calcular los totales de entradas y salidas
+    let totalEntradas = 0;
+    let totalSalidas = 0;
+
+    movimientos.forEach(mov => {
+        if (mov.tipo === "ingreso") {
+            totalEntradas += mov.monto;
+        } else if (mov.tipo === "salida") {
+            totalSalidas += mov.monto;
+        }
+    });
+
+    // 3. Calcular el total actual
+    const totalCajaActual = totalEntradas - totalSalidas;
+
+    // 4. Actualizar los elementos HTML con los nuevos totales
+    document.getElementById("totalCajaActual").textContent = totalCajaActual.toFixed(2);
+    document.getElementById("totalEntradas").textContent = totalEntradas.toFixed(2);
+    document.getElementById("totalSalidas").textContent = totalSalidas.toFixed(2);
+
+    // 5. Refrescar el historial de movimientos de caja
+    mostrarMovimientosCaja();
 }
 
 // Inicializar
@@ -1984,3 +1996,56 @@ document.addEventListener("DOMContentLoaded", () => {
         mostrarSistema(sesion);
     }
 });
+
+function finalizarVenta(imprimir = false) {
+    const carrito = JSON.parse(localStorage.getItem('ticketActual')) || [];
+    const total = carrito.reduce((s, i) => s + i.subtotal, 0);
+    const metodoPagoEl = document.getElementById("metodoPago");
+    const montoInput = document.getElementById("montoRecibido");
+
+    const metodoPago = metodoPagoEl.value;
+    const recibido = metodoPago === "efectivo" ? parseFloat(montoInput.value) : total;
+    const cambio = metodoPago === "efectivo" ? recibido - total : 0;
+
+    if (metodoPago === "efectivo" && (isNaN(recibido) || recibido < total)) {
+        alert("El monto recibido no es suficiente.");
+        return;
+    }
+
+    // Guardar la venta en historial
+    const historial = JSON.parse(localStorage.getItem("historialVentas")) || [];
+    historial.push({
+        fecha: new Date().toLocaleString(),
+        productos: carrito,
+        total: total,
+        metodoPago,
+        recibido,
+        cambio
+    });
+    localStorage.setItem("historialVentas", JSON.stringify(historial));
+
+    // Guardar el movimiento en la caja
+    const caja = JSON.parse(localStorage.getItem("caja")) || [];
+    caja.push({
+        fecha: new Date().toLocaleString(),
+        tipo: "ingreso",
+        concepto: "Venta",
+        monto: total,
+        metodo: metodoPago
+    });
+    localStorage.setItem("caja", JSON.stringify(caja));
+
+    // Limpiar el ticket y el localStorage temporal
+    localStorage.removeItem('ticketActual');
+    document.querySelector('#tablaTicket tbody').innerHTML = '';
+    document.getElementById('totalTicket').textContent = 'Total: $0.00';
+    document.getElementById('totalTicket').dataset.total = "0";
+
+    // Actualizar las vistas de historial y totales
+    actualizarHistorialVentas();
+    actualizarTotalesCaja();
+
+    // Cierra el modal de confirmación
+    const modal = document.querySelector(".modal");
+    if (modal) modal.remove();
+}
