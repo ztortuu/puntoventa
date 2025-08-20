@@ -6,12 +6,36 @@ let movimientosCaja = [];
 // Cargar datos almacenados
 
 // Usuarios (guardados en localStorage)
+// Agrega o modifica esta función en tu script.js
 function getUsuarios() {
-  return JSON.parse(localStorage.getItem("usuarios")) || [
-    { user: "admin", pass: "admin123", rol: "admin" }
+  const usuarios = JSON.parse(localStorage.getItem("usuarios")) || [
+    // El usuario "admin" tiene todos los permisos por defecto
+    { user: "admin", pass: "admin123", rol: "admin", permissions: {
+        ventas: true,
+        inventario: true,
+        historial: true,
+        totalesCaja: true,
+        ajustes: true,
+        usuarios: true // Nuevo permiso para gestión de usuarios
+    }}
   ];
+  
+  // Aseguramos que todos los usuarios tengan la propiedad 'permissions'
+  // Esto es útil si ya tienes usuarios guardados sin esta propiedad
+  return usuarios.map(user => {
+    if (!user.permissions) {
+      user.permissions = {
+        ventas: true,
+        inventario: true,
+        historial: true,
+        totalesCaja: false, // Por defecto, el empleado no puede ver esta sección
+        ajustes: false,     // Por defecto, el empleado no puede ver ajustes
+        usuarios: false     // Por defecto, el empleado no puede gestionar usuarios
+      };
+    }
+    return user;
+  });
 }
-
 function saveUsuarios(usuarios) {
   localStorage.setItem("usuarios", JSON.stringify(usuarios));
 }
@@ -30,7 +54,6 @@ function eliminarUsuario(i) {
 
 // --- FUNCIONES DE GESTIÓN DE SESIÓN ---
 
-// Inicia sesión: guarda en localStorage y redirige
 function login() {
   const user = document.getElementById("loginUser").value.trim();
   const pass = document.getElementById("loginPass").value.trim();
@@ -43,7 +66,7 @@ function login() {
   }
 
   localStorage.setItem("sesion", JSON.stringify(encontrado));
-  window.location.href = "index.html";
+  window.location.href = "index.html"; // 👈 redirección al index
 }
 
 // Cierra sesión: elimina de localStorage y redirige
@@ -83,7 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("Sesión activa. Mostrando el sistema de punto de venta.");
         mostrarSistema(sesion);
     }
-  if (isLoginPage) {
+    if (isLoginPage) {
         const loginBtn = document.getElementById("login-btn");
         if (loginBtn) {
             loginBtn.addEventListener("click", login);
@@ -153,6 +176,18 @@ function mostrarSeccion(nombre) {
     document.querySelectorAll(".seccion").forEach(sec => sec.style.display = "none");
     document.getElementById(nombre).style.display = "block";
 
+      const sesion = JSON.parse(localStorage.getItem("sesion"));
+  
+  // Si no es admin y no tiene el permiso, no muestra la sección
+  if (sesion.rol !== 'admin' && !sesion.permissions[seccionId]) {
+    alert("No tienes permiso para ver esta sección.");
+    return;
+  }
+
+  // ... (el resto de tu código para mostrar la sección, que ya tenías) ...
+  const secciones = document.querySelectorAll('.seccion');
+  secciones.forEach(sec => sec.style.display = 'none');
+  document.getElementById(seccionId).style.display = 'block';
     if (nombre === "inventario") mostrarSubseccion("verInventario");
     if (nombre === "ventas") mostrarSubseccion("facturar");
     if (nombre === "historial") actualizarHistorialVentas();
@@ -1048,12 +1083,6 @@ function crearProducto() {
 
 
 // Al cargar la página, mostrar inventario de pollos por defecto y actualizar todas las listas
-window.onload = function() {
-    mostrarCategoria("pollo");
-    actualizarInventarioPollos();
-    actualizarInventarioCarnes();
-    actualizarInventarioCajones();
-};
 
 // Variables globales para los gráficos
 let chartIngresos = null;
@@ -1385,16 +1414,6 @@ function autocompletarProducto() {
 }
 
 // Cargar ajustes al iniciar
-window.onload = function() {
-    document.getElementById('nombreNegocio').value = localStorage.getItem('nombreNegocio') || '';
-    document.getElementById('direccionLocal').value = localStorage.getItem('direccionLocal') || '';
-    document.getElementById('nombreCajero').value = localStorage.getItem('cajero') || '';
-    document.getElementById('imprimirAuto').checked = localStorage.getItem('imprimirAuto') === 'true';
-
-    // Inicializar categorías dinámicas si existen
-    const categoriasGuardadas = JSON.parse(localStorage.getItem('categoriasExtras') || '[]');
-    categoriasGuardadas.forEach(cat => agregarCategoriaAHTML(cat));
-};
 
 // Guardar nombre del negocio
 function guardarNombreNegocio() {
@@ -1635,77 +1654,163 @@ function eliminarUsuario(i) {
   saveUsuarios(usuarios);
   mostrarUsuarios();
 }
-window.onload = function() {
-  const sesion = JSON.parse(localStorage.getItem("sesion"));
-  if (!sesion) {
-    // si no está logueado, vuelve al login
-    window.location.href = "login.html";
-    return;
-  }
-  mostrarSistema(sesion);
-};
 
-function login() {
-  const user = document.getElementById("loginUser").value.trim();
-  const pass = document.getElementById("loginPass").value.trim();
-  const usuarios = getUsuarios();
-
-  const encontrado = usuarios.find(u => u.user === user && u.pass === pass);
-  if (!encontrado) {
-    alert("Usuario o contraseña incorrectos");
-    return;
-  }
-
-  localStorage.setItem("sesion", JSON.stringify(encontrado));
-  window.location.href = "index.html"; // 👈 redirección al index
-}
-
-
-window.onload = function() {
-  const sesion = JSON.parse(localStorage.getItem("sesion"));
-  if (!sesion) {
-    // 👇 Si no hay sesión guardada, vuelve al login
-    window.location.href = "login.html";
-    return;
-  }
-
-  // 👇 Si hay sesión, mostramos el sistema
-  mostrarSistema(sesion);
-};
 
 function logout() {
   localStorage.removeItem("sesion");
   window.location.href = "login.html"; // 👈 vuelve al login
 }
 
-function saveInventario(inventario) {
-  localStorage.setItem("inventario", JSON.stringify(inventario));
+// Muestra la interfaz de gestión de usuarios y permisos
+function mostrarAjustes() {
+    // Primero, muestra la sección principal de ajustes
+    const secciones = document.querySelectorAll('.seccion');
+    secciones.forEach(sec => sec.style.display = 'none');
+    document.getElementById('ajustes').style.display = 'block';
+
+    const sesion = JSON.parse(localStorage.getItem("sesion"));
+    if (sesion && sesion.rol === 'admin') {
+      mostrarPermisos();
+    }
 }
 
-function getUsuarios() {
-  const usuarios = JSON.parse(localStorage.getItem("usuarios"));
-  // Si no hay usuarios, devuelve un array vacío (la inicialización se encargó de crearlos)
-  return usuarios || [];
+// Genera la lista de usuarios con checkboxes para los permisos
+function mostrarPermisos() {
+    const listaPermisos = document.getElementById("permisosLista");
+    if (!listaPermisos) return; // Asegura que el elemento existe
+
+    listaPermisos.innerHTML = '';
+    const usuarios = getUsuarios();
+    
+    // Lista de permisos que se pueden modificar
+    const permisosDisponibles = ['ventas', 'inventario', 'historial', 'totalesCaja', 'ajustes'];
+
+    usuarios.forEach((u, i) => {
+        // Solo el admin puede modificar a otros usuarios
+        if (u.rol !== 'admin') {
+            const usuarioDiv = document.createElement('div');
+            usuarioDiv.className = 'usuario-permisos';
+            usuarioDiv.innerHTML = `<h4>${u.user}</h4>`;
+            
+            permisosDisponibles.forEach(permiso => {
+                const label = document.createElement('label');
+                label.innerHTML = `
+                  <input type="checkbox" data-user-index="${i}" data-permiso="${permiso}" ${u.permissions[permiso] ? 'checked' : ''}>
+                  Ver ${permiso.charAt(0).toUpperCase() + permiso.slice(1)}
+                `;
+                usuarioDiv.appendChild(label);
+            });
+            
+            listaPermisos.appendChild(usuarioDiv);
+        }
+    });
+
+    // Botón para guardar los cambios
+    const botonGuardar = document.createElement('button');
+    botonGuardar.textContent = 'Guardar Permisos';
+    botonGuardar.onclick = guardarPermisos;
+    listaPermisos.appendChild(botonGuardar);
 }
 
+// Guarda los cambios en los permisos
+function guardarPermisos() {
+    let usuarios = getUsuarios();
+    
+    // Recorre todos los checkboxes
+    const checkboxes = document.querySelectorAll('#permisosLista input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        const userIndex = checkbox.dataset.userIndex;
+        const permiso = checkbox.dataset.permiso;
+        const isChecked = checkbox.checked;
+
+        // Actualiza el permiso del usuario
+        if (usuarios[userIndex] && usuarios[userIndex].permissions) {
+            usuarios[userIndex].permissions[permiso] = isChecked;
+        }
+    });
+    
+    saveUsuarios(usuarios); // Asume que esta función existe
+    alert("Permisos actualizados correctamente!");
+    // Vuelve a cargar la interfaz para mostrar los cambios
+    mostrarPermisos(); 
+}
+
+// Y asegúrate de que tienes una función para guardar los usuarios, si no la tienes, agrégala:
 function saveUsuarios(usuarios) {
-  localStorage.setItem("usuarios", JSON.stringify(usuarios));
+    localStorage.setItem("usuarios", JSON.stringify(usuarios));
 }
 
-function login() {
-  const user = document.getElementById("loginUser").value.trim();
-  const pass = document.getElementById("loginPass").value.trim();
-  const usuarios = getUsuarios();
+// La función `mostrarSistema` ahora controla la visibilidad de los botones de navegación
+function mostrarSistema(sesion) {
+  // Asegúrate de que los botones tengan los IDs correctos para la visibilidad
+  const botonesPermisos = {
+    'ventas': document.querySelector('button[onclick*="mostrarSeccion(\'ventas\')"]'),
+    'inventario': document.querySelector('button[onclick*="mostrarSeccion(\'inventario\')"]'),
+    'historial': document.querySelector('button[onclick*="mostrarSeccion(\'historial\')"]'),
+    'totalesCaja': document.querySelector('button[onclick*="mostrarSeccion(\'totalesCaja\')"]'),
+    'ajustes': document.querySelector('button[onclick*="mostrarSeccion(\'ajustes\')"]')
+  };
 
-  const encontrado = usuarios.find(u => u.user === user && u.pass === pass);
-  if (!encontrado) {
-    alert("Usuario o contraseña incorrectos");
+  // Oculta los botones si el usuario no tiene permiso
+  if (sesion.rol !== 'admin') {
+    for (const seccion in botonesPermisos) {
+      if (botonesPermisos[seccion] && !sesion.permissions[seccion]) {
+        botonesPermisos[seccion].style.display = 'none';
+      }
+    }
+  }
+
+  // Muestra la sección de ventas por defecto
+  mostrarSeccion('ventas');
+  // ... (aquí puedes llamar a otras funciones de inicialización si las tienes) ...
+}
+
+
+// La función `mostrarSeccion` ahora valida los permisos antes de mostrar la sección
+function mostrarSeccion(seccionId) {
+  const sesion = JSON.parse(localStorage.getItem("sesion"));
+  
+  // Si no es admin y no tiene el permiso, no muestra la sección
+  if (sesion.rol !== 'admin' && !sesion.permissions[seccionId]) {
+    alert("No tienes permiso para ver esta sección.");
     return;
   }
 
-  localStorage.setItem("sesion", JSON.stringify(encontrado));
-  window.location.href = "index.html";
+  // ... (el resto de tu código para mostrar la sección, que ya tenías) ...
+  const secciones = document.querySelectorAll('.seccion');
+  secciones.forEach(sec => sec.style.display = 'none');
+  document.getElementById(seccionId).style.display = 'block';
 }
+
+// Verifica y crea el inventario por defecto si no existe
+function inicializarInventario() {
+  const inventario = JSON.parse(localStorage.getItem("inventario"));
+  if (!inventario) {
+    const inventarioInicial = [
+      { id: "pollo", nombre: "Pollo", stock: 0 },
+      { id: "carne", nombre: "Carne", stock: 0 },
+      { id: "cajones", nombre: "Cajones", stock: 0 }
+    ];
+    localStorage.setItem("inventario", JSON.stringify(inventarioInicial));
+    console.log("Inventario inicial creado.");
+  }
+}
+
+// Verifica y crea el usuario 'admin' por defecto si no existe
+function inicializarUsuarios() {
+  const usuarios = JSON.parse(localStorage.getItem("usuarios"));
+  if (!usuarios) {
+    const usuariosIniciales = [
+      { user: "admin", pass: "admin123", rol: "admin", permissions: {
+        ventas: true, inventario: true, historial: true, totalesCaja: true, ajustes: true, usuarios: true
+      }}
+    ];
+    localStorage.setItem("usuarios", JSON.stringify(usuariosIniciales));
+    console.log("Usuario 'admin' inicial creado.");
+  }
+}
+
+
 
 function logout() {
   localStorage.removeItem("sesion");
@@ -1811,5 +1916,99 @@ function mostrarUsuarios() {
   });
 }
 
+function saveInventario(inventario) {
+  localStorage.setItem("inventario", JSON.stringify(inventario));
+}
 
 
+function saveUsuarios(usuarios) {
+  localStorage.setItem("usuarios", JSON.stringify(usuarios));
+}
+
+function logout() {
+  localStorage.removeItem("sesion");
+  window.location.href = "login.html";
+}
+
+// Funciones para inicializar datos si no existen
+function inicializarDatos() {
+    // Inicializar inventario por defecto si no existe
+    if (!localStorage.getItem("inventario")) {
+        const inventarioInicial = [
+            { codigo: "P001", nombre: "Pollo Entero", stock: 100, precio: 3000, categoria: "pollo" },
+            { codigo: "C001", nombre: "Carne Picada", stock: 50, precio: 5000, categoria: "carne" },
+            { codigo: "CA01", nombre: "Cajón de pollos", stock: 20, precio: 1000, categoria: "cajones" }
+        ];
+        localStorage.setItem("inventario", JSON.stringify(inventarioInicial));
+    }
+
+    // Inicializar usuario 'admin' si no existe
+    if (!localStorage.getItem("usuarios")) {
+        const usuariosIniciales = [
+            { user: "admin", pass: "admin123", rol: "admin", permissions: {
+                ventas: true, inventario: true, historial: true, totalesCaja: true, ajustes: true, usuarios: true
+            }}
+        ];
+        localStorage.setItem("usuarios", JSON.stringify(usuariosIniciales));
+    }
+
+    // Inicializar otras colecciones si no existen
+    if (!localStorage.getItem("historialVentas")) {
+        localStorage.setItem("historialVentas", "[]");
+    }
+    if (!localStorage.getItem("movimientosCaja")) {
+        localStorage.setItem("movimientosCaja", "[]");
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    // 1. Inicializa los datos al principio de todo
+    inicializarDatos();
+
+    // 2. Controla la lógica de redirección y carga del sistema
+    const isLoginPage = window.location.pathname.endsWith("login.html");
+    const isIndexPage = window.location.pathname.endsWith("index.html") || window.location.pathname === "/";
+
+    if (isLoginPage) {
+        const loginBtn = document.getElementById("login-btn");
+        if (loginBtn) {
+            loginBtn.addEventListener("click", login);
+        }
+    }
+
+    if (isIndexPage) {
+        const sesion = JSON.parse(localStorage.getItem("sesion"));
+        if (!sesion) {
+            window.location.href = "login.html";
+            return;
+        }
+        mostrarSistema(sesion);
+    }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    // 1. INICIALIZA LOS DATOS: Esto se ejecuta primero y asegura que el inventario y el usuario admin existan.
+    inicializarDatos();
+
+    // 2. VERIFICA EN QUÉ PÁGINA ESTÁS: Esto decide si debes ir a la página principal o al login.
+    const isLoginPage = window.location.pathname.endsWith("login.html");
+    const isIndexPage = window.location.pathname.endsWith("index.html") || window.location.pathname === "/";
+
+    // 3. ACTÚA SEGÚN LA PÁGINA: Si estás en el login, conecta el botón de login.
+    if (isLoginPage) {
+        const loginBtn = document.getElementById("login-btn");
+        if (loginBtn) {
+            loginBtn.addEventListener("click", login);
+        }
+    }
+    
+    // Si estás en la página principal, verifica la sesión.
+    if (isIndexPage) {
+        const sesion = JSON.parse(localStorage.getItem("sesion"));
+        if (!sesion) {
+            window.location.href = "login.html";
+            return;
+        }
+        mostrarSistema(sesion);
+    }
+});
