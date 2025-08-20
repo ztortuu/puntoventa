@@ -1678,3 +1678,138 @@ function logout() {
   window.location.href = "login.html"; // 👈 vuelve al login
 }
 
+function saveInventario(inventario) {
+  localStorage.setItem("inventario", JSON.stringify(inventario));
+}
+
+function getUsuarios() {
+  const usuarios = JSON.parse(localStorage.getItem("usuarios"));
+  // Si no hay usuarios, devuelve un array vacío (la inicialización se encargó de crearlos)
+  return usuarios || [];
+}
+
+function saveUsuarios(usuarios) {
+  localStorage.setItem("usuarios", JSON.stringify(usuarios));
+}
+
+function login() {
+  const user = document.getElementById("loginUser").value.trim();
+  const pass = document.getElementById("loginPass").value.trim();
+  const usuarios = getUsuarios();
+
+  const encontrado = usuarios.find(u => u.user === user && u.pass === pass);
+  if (!encontrado) {
+    alert("Usuario o contraseña incorrectos");
+    return;
+  }
+
+  localStorage.setItem("sesion", JSON.stringify(encontrado));
+  window.location.href = "index.html";
+}
+
+function logout() {
+  localStorage.removeItem("sesion");
+  window.location.href = "login.html";
+}
+
+// =========================================================
+// 3. CONTROL DE FLUJO Y "GUARDIAS" DE PÁGINA
+// =========================================================
+
+document.addEventListener("DOMContentLoaded", () => {
+  // PASO CLAVE: Inicializa los datos al cargar la página ANTES de cualquier otra cosa
+  inicializarInventario();
+  inicializarUsuarios();
+  
+  const isLoginPage = window.location.pathname.endsWith("login.html");
+  const isIndexPage = window.location.pathname.endsWith("index.html") || window.location.pathname === "/";
+
+  if (isLoginPage) {
+    const loginBtn = document.getElementById("login-btn");
+    if (loginBtn) {
+      loginBtn.addEventListener("click", login);
+    }
+  }
+
+  if (isIndexPage) {
+    const sesion = JSON.parse(localStorage.getItem("sesion"));
+    if (!sesion) {
+      window.location.href = "login.html";
+      return;
+    }
+    mostrarSistema(sesion);
+  }
+});
+
+// =========================================================
+// 4. FUNCIONES DE INTERFAZ DE USUARIO (MOSTRAR DATOS)
+// =========================================================
+
+function mostrarSistema(sesion) {
+  // Asegúrate de que esta función llama a las funciones que muestran el contenido inicial
+  mostrarInventario();
+  mostrarUsuarios(); // Esta función debería ser para mostrar la lista de usuarios en la sección de ajustes
+  
+  // Tu código para mostrar u ocultar botones de navegación según permisos
+  const botonesPermisos = {
+    'ventas': document.querySelector('button[onclick*="mostrarSeccion(\'ventas\')"]'),
+    'inventario': document.querySelector('button[onclick*="mostrarSeccion(\'inventario\')"]'),
+    'historial': document.querySelector('button[onclick*="mostrarSeccion(\'historial\')"]'),
+    'totalesCaja': document.querySelector('button[onclick*="mostrarSeccion(\'totalesCaja\')"]'),
+    'ajustes': document.querySelector('button[onclick*="mostrarSeccion(\'ajustes\')"]')
+  };
+
+  if (sesion.rol !== 'admin') {
+    for (const seccion in botonesPermisos) {
+      if (botonesPermisos[seccion] && !sesion.permissions[seccion]) {
+        botonesPermisos[seccion].style.display = 'none';
+      }
+    }
+  }
+}
+
+// Esta función se encarga SOLO de mostrar el inventario, no de crearlo.
+function mostrarInventario() {
+  const inventario = getInventario();
+
+  const listaPollo = document.getElementById("listaInventarioPollo");
+  const listaCarne = document.getElementById("listaInventarioCarne");
+  const listaCajones = document.getElementById("listaInventarioCajones");
+  
+  // Limpia el contenido anterior
+  if (listaPollo) listaPollo.innerHTML = "";
+  if (listaCarne) listaCarne.innerHTML = "";
+  if (listaCajones) listaCajones.innerHTML = "";
+  
+  // Si hay inventario, lo muestra
+  if (inventario.length > 0) {
+    inventario.forEach(item => {
+      const listItem = document.createElement("li");
+      listItem.innerHTML = `${item.nombre}: <span>${item.stock}</span>`;
+      if (item.id === "pollo") listaPollo.appendChild(listItem);
+      if (item.id === "carne") listaCarne.appendChild(listItem);
+      if (item.id === "cajones") listaCajones.appendChild(listItem);
+    });
+  } else {
+    // Si el inventario está vacío (lo cual no pasará con la inicialización)
+    // muestra un mensaje o no hace nada.
+    if (listaPollo) listaPollo.innerHTML = "<li>No hay productos en inventario.</li>";
+  }
+}
+
+// Función para mostrar la lista de usuarios en la sección de ajustes
+function mostrarUsuarios() {
+  const usuarios = getUsuarios();
+  const lista = document.getElementById("listaUsuarios");
+  
+  if (!lista) return;
+
+  lista.innerHTML = "";
+  usuarios.forEach((u, i) => {
+    lista.innerHTML += `<li>${u.user} (${u.rol}) 
+      <button onclick="eliminarUsuario(${i})">Eliminar</button></li>`;
+  });
+}
+
+
+
