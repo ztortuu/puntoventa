@@ -374,9 +374,8 @@ function procesarPago() {
     finalizarVenta(metodoPago);
 }
 
-// Esta función SÓLO se encarga de abrir el modal y mostrar los datos
+// Función para crear y mostrar el modal de confirmación de venta
 function confirmarVenta() {
-    // Si no hay productos en el carrito, no hace nada
     const carrito = JSON.parse(localStorage.getItem('ticketActual')) || [];
     if (carrito.length === 0) {
         alert("El carrito está vacío. Agregue productos para finalizar la venta.");
@@ -385,7 +384,6 @@ function confirmarVenta() {
 
     const total = carrito.reduce((sum, item) => sum + item.subtotal, 0);
 
-    // Crea el modal dinámicamente
     const modal = document.createElement("div");
     modal.className = "modal";
     modal.innerHTML = `
@@ -410,7 +408,7 @@ function confirmarVenta() {
     document.body.appendChild(modal);
 }
 
-// Esta función se encarga de la lógica de guardar la venta
+// Esta función es llamada por el botón "Confirmar" y hace toda la lógica de la venta
 function finalizarVenta() {
     const carrito = JSON.parse(localStorage.getItem('ticketActual')) || [];
     const total = carrito.reduce((s, i) => s + i.subtotal, 0);
@@ -426,7 +424,7 @@ function finalizarVenta() {
         return;
     }
 
-    // Guardar la venta en historial
+    // Guardar la venta en el historial
     const historial = JSON.parse(localStorage.getItem("historialVentas")) || [];
     historial.push({
         fecha: new Date().toLocaleString(),
@@ -438,7 +436,7 @@ function finalizarVenta() {
     });
     localStorage.setItem("historialVentas", JSON.stringify(historial));
 
-    // Guardar el movimiento en la caja
+    // Guardar el movimiento de dinero en la caja
     const caja = JSON.parse(localStorage.getItem("caja")) || [];
     caja.push({
         fecha: new Date().toLocaleString(),
@@ -449,7 +447,7 @@ function finalizarVenta() {
     });
     localStorage.setItem("caja", JSON.stringify(caja));
 
-    // Limpiar el ticket y el localStorage temporal
+    // Limpiar el ticket y el localStorage
     localStorage.removeItem('ticketActual');
     document.querySelector('#tablaTicket tbody').innerHTML = '';
     document.getElementById('totalTicket').textContent = 'Total: $0.00';
@@ -459,16 +457,31 @@ function finalizarVenta() {
     actualizarHistorialVentas();
     actualizarTotalesCaja();
 
-    // Cierra el modal
+    // Cierra el modal de confirmación
     const modal = document.querySelector(".modal");
     if (modal) modal.remove();
 }
 
+// Función para cerrar cualquier modal
 function cerrarModal() {
     const modal = document.querySelector(".modal");
     if (modal) modal.remove();
 }
 
+// Función para mostrar los movimientos de caja
+function mostrarMovimientosCaja() {
+    const movimientos = JSON.parse(localStorage.getItem("caja")) || [];
+    const lista = document.querySelector("#listaMovimientos");
+    if (!lista) return;
+
+    lista.innerHTML = "";
+    movimientos.forEach(mov => {
+        const item = document.createElement("li");
+        const montoFormateado = mov.monto.toFixed(2);
+        item.textContent = `${mov.fecha} - ${mov.concepto}: $${montoFormateado} (${mov.tipo})`;
+        lista.appendChild(item);
+    });
+}
 
 // H) Función compartida para registrar la venta
 function procesarVenta(imprimir) {
@@ -1956,5 +1969,6 @@ document.addEventListener("DOMContentLoaded", () => {
         mostrarSistema(sesion);
     }
 });
+
 
 
