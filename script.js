@@ -83,6 +83,21 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("Sesión activa. Mostrando el sistema de punto de venta.");
         mostrarSistema(sesion);
     }
+  if (isLoginPage) {
+        const loginBtn = document.getElementById("login-btn");
+        if (loginBtn) {
+            loginBtn.addEventListener("click", login);
+        }
+    }
+
+    if (isIndexPage) {
+        const sesion = JSON.parse(localStorage.getItem("sesion"));
+        if (!sesion) {
+            window.location.href = "login.html";
+            return;
+        }
+        mostrarSistema(sesion);
+    }
 });
 
 
@@ -1662,3 +1677,4 @@ function logout() {
   localStorage.removeItem("sesion");
   window.location.href = "login.html"; // 👈 vuelve al login
 }
+
